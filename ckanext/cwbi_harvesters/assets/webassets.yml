@@ -1,0 +1,14 @@
+# cwbi_harvesters-js:
+#   filter: rjsmin
+#   output: ckanext-cwbi_harvesters/%(version)s-cwbi_harvesters.js
+#   contents:
+#     - js/cwbi_harvesters.js
+#   extra:
+#     preload:
+#       - base/main
+
+# cwbi_harvesters-css:
+#   filter: cssrewrite
+#   output: ckanext-cwbi_harvesters/%(version)s-cwbi_harvesters.css
+#   contents:
+#     - css/cwbi_harvesters.css

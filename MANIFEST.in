@@ -1,0 +1,6 @@
+include README.rst
+include LICENSE
+include requirements.txt
+recursive-include ckanext/cwbi_harvesters *.html *.json *.js *.less *.css *.mo *.yml
+recursive-include ckanext/cwbi_harvesters/migration *.ini *.py *.mako
+recursive-include ckanext/cwbi_harvesters/public *.*
