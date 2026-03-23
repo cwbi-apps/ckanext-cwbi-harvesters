@@ -194,7 +194,7 @@ class CWBICSWHarvester(CSWHarvester, CWBIHarvester):
     '''
 
 
-class CWBIAWAFHarvester(WAFHarvester, CWBIHarvester):
+class CWBIWAFHarvester(WAFHarvester, CWBIHarvester):
     '''
     A Harvester for Web Accessible Folders, with customizations for CWBI    
     '''
