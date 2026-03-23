@@ -6,7 +6,7 @@ from ckan import logic
 
 
 
-from ckanext.cwbi_harvesters.harvester.notifications import \
+from ckanext.cwbi_harvesters.harvesters.notifications import \
     harvest_get_notifications_recipients
 
 
