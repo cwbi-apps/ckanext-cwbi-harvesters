@@ -3,10 +3,14 @@ name = "ckanext-cwbi-harvesters"
 version = "0.0.1"
 description = "Harvesters"
 readme = "README.md"
+requires-python = ">=3.8"
+
 authors = [
-    {name = "CWBI", email = "brian.p.mulcahy@erdc.dren.mil"}
+    { name = "CWBI", email = "brian.p.mulcahy@erdc.dren.mil" }
 ]
-license = {text = "AGPL"}
+
+license = { text = "AGPL-3.0-or-later" }
+
 classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
@@ -15,7 +19,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
 ]
 
-keywords = [ "CKAN", "harvester", "cwbi", "usace", "schema", ]
+keywords = ["CKAN", "harvester", "cwbi", "usace", "schema"]
+
 dependencies = []
 
 [project.urls]
@@ -23,12 +28,12 @@ Homepage = "https://github.com/bmulcahy/ckanext-cwbi-harvesters"
 
 [project.entry-points."ckan.plugins"]
 cwbi_harvesters = "ckanext.cwbi_harvesters.plugin:CwbiHarvestersPlugin"
-cwbi_harvesters_csw_harvester=ckanext.cwbi_harvesters.harvesters:CWBICSWHarvester
-cwbi_harvesters_waf_harvester=ckanext.cwbi_harvesters.harvesters:CWBIWAFHarvester
-cwbi_harvesters_doc_harvester=ckanext.cwbi_harvesters.harvesters:CWBIDocHarvester
-cwbi_harvesters_geoportal_harvester=ckanext.cwbi_harvesters.harvesters:CWBIGeoportalHarvester
-waf_harvester_collection=ckanext.cwbi_harvesters.harvesters:WAFCollectionHarvester
-arcgis_harvester=ckanext.cwbi_harvesters.harvesters:ArcGISHarvester
+cwbi_harvesters_csw_harvester = "ckanext.cwbi_harvesters.harvesters:CWBICSWHarvester"
+cwbi_harvesters_waf_harvester = "ckanext.cwbi_harvesters.harvesters:CWBIWAFHarvester"
+cwbi_harvesters_doc_harvester = "ckanext.cwbi_harvesters.harvesters:CWBIDocHarvester"
+cwbi_harvesters_geoportal_harvester = "ckanext.cwbi_harvesters.harvesters:CWBIGeoportalHarvester"
+waf_harvester_collection = "ckanext.cwbi_harvesters.harvesters:WAFCollectionHarvester"
+arcgis_harvester = "ckanext.cwbi_harvesters.harvesters:ArcGISHarvester"
 
 [build-system]
 requires = ["setuptools"]
@@ -36,8 +41,8 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 filterwarnings = [
-        "ignore::sqlalchemy.exc.SADeprecationWarning",
-        "ignore::sqlalchemy.exc.SAWarning",
-        "ignore::DeprecationWarning",
+    "ignore::sqlalchemy.exc.SADeprecationWarning",
+    "ignore::sqlalchemy.exc.SAWarning",
+    "ignore::DeprecationWarning",
 ]
 addopts = "--ckan-ini test.ini"
