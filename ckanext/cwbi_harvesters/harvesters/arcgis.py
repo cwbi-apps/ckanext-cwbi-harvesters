@@ -23,7 +23,7 @@ from html.parser import HTMLParser
 from ckan.plugins.toolkit import add_template_directory, add_resource, requires_ckan_version
 from ckan.plugins import IConfigurer
 
-from ckanext.geodatagov.helpers import string as custom_string
+from ckanext.cwbi_harvesters.helpers import string as custom_string
 
 requires_ckan_version("2.9")
 

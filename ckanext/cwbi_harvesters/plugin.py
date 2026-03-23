@@ -79,11 +79,6 @@ class CwbiHarvestersPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     # def get_commands(self):
     #     return cli.get_commands()
 
-    # ITemplateHelpers
-
-    # def get_helpers(self):
-    #     return helpers.get_helpers()
-
     # IValidators
 
     def get_validators(self):
@@ -91,7 +86,7 @@ class CwbiHarvestersPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     
     # ITemplateHelpers
     def get_helpers(self):
-        return {}
+        return helpers.get_helpers()
 
     def get_actions(self):
         return {
@@ -105,7 +100,7 @@ class CwbiHarvestersPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
         # Add tracking information just for datasets
         if pkg_dict.get("type", "dataset") == "dataset":
             if toolkit.asbool(
-                config.get("ckanext.datagovcatalog.add_packages_tracking_info", True)
+                config.get("ckanext.ckan_harvesters.add_packages_tracking_info", True)
             ):
                 # add tracking information.
                 # CKAN by default hide tracking info for datasets

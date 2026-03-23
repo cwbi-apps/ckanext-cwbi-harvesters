@@ -8,15 +8,15 @@ from ckan import model
 from ckan.lib.navl.validators import not_empty  # , ignore_empty
 
 import ckanext.harvest.queue as queue
-from ckanext.geodatagov.harvesters.base import (
-    GeoDataGovWAFHarvester,
+from ckanext.cwbi_harvesters.harvesters.base import (
+    CWBIWAFHarvester,
 )  # , validate_profiles; , validate_profiles
 from ckanext.harvest.model import HarvestObject
 from ckanext.harvest.model import HarvestObjectExtra as HOExtra
-from ckanext.geodatagov.helpers import string
+from ckanext.cwbi_harvesters.helpers import string
 
 
-class WAFCollectionHarvester(GeoDataGovWAFHarvester):
+class WAFCollectionHarvester(CWBIWAFHarvester):
     def info(self):
         return {
             "name": "waf-collection",
@@ -130,6 +130,6 @@ class WAFCollectionHarvester(GeoDataGovWAFHarvester):
             )
             return None
 
-        return GeoDataGovWAFHarvester.gather_stage(
+        return CWBIWAFHarvester.gather_stage(
             self, harvest_job, collection_package_id=obj.package_id
         )
