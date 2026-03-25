@@ -17,6 +17,7 @@ from ckanext.harvest.logic.schema import unicode_safe  # type: ignore[import-not
 from ckanext.harvest.model import HarvestObject  # type: ignore[import-not-found]
 from ckanext.harvest.model import HarvestObjectExtra  # type: ignore[import-not-found]
 from ckanext.harvest.harvesters import HarvesterBase  # type: ignore[import-not-found]
+from ckanext.cwbi_harvesters.harvesters.utils import _safe_save
 
 
 log = logging.getLogger(__name__)
@@ -131,7 +132,7 @@ class ArcGISHarvesterStrategy(HarvesterBase):
             try:
                 url = urllib.parse.urljoin(source_url, search_path)
             except TypeError as exc:
-                self._save_gather_error(
+                _safe_save(self._save_gather_error,
                     "Unable to build url ({0}, {1}): {2}".format(source_url, search_path, exc),
                     harvest_job,
                 )
@@ -141,7 +142,7 @@ class ArcGISHarvesterStrategy(HarvesterBase):
                 response = requests.get(url)
                 response.raise_for_status()
             except requests.exceptions.RequestException as exc:
-                self._save_gather_error(
+                _safe_save(self._save_gather_error,
                     "Unable to get content for URL: {0}: {1!r}".format(url, exc),
                     harvest_job,
                 )
@@ -265,7 +266,7 @@ class ArcGISHarvesterStrategy(HarvesterBase):
             return True
 
         if harvest_object.content is None:
-            self._save_object_error(
+            _safe_save(self._save_object_error,
                 "Empty content for object {0}".format(harvest_object.id),
                 harvest_object,
                 "Import",
@@ -304,7 +305,7 @@ class ArcGISHarvesterStrategy(HarvesterBase):
                 package_id = self._get_action("package_create")(context, package_dict)
                 log.info("Created new package %s with guid %s", package_id, harvest_object.guid)
             except ValidationError as exc:
-                self._save_object_error(
+                _safe_save(self._save_object_error,
                     "Validation Error: {0}".format(str(exc.error_summary)),
                     harvest_object,
                     "Import",
@@ -317,7 +318,7 @@ class ArcGISHarvesterStrategy(HarvesterBase):
                 package_id = self._get_action("package_update")(context, package_dict)
                 log.info("Updated package %s with guid %s", package_id, harvest_object.guid)
             except ValidationError as exc:
-                self._save_object_error(
+                _safe_save(self._save_object_error,
                     "Validation Error: {0}".format(str(exc.error_summary)),
                     harvest_object,
                     "Import",
@@ -391,7 +392,7 @@ class ArcGISHarvesterStrategy(HarvesterBase):
             resource_format = "ArcGIS MAP Preview"
 
         if not resource_url:
-            self._save_object_error(
+            _safe_save(self._save_object_error,
                 "Validation Error: url not in record",
                 harvest_object,
                 "Import",
