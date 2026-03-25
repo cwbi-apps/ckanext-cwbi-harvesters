@@ -1,42 +1,28 @@
-.ropeproject
-node_modules
-bower_components
-
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-
-# C extensions
-*.so
-
-# Distribution / packaging
-.Python
-env/
-build/
-develop-eggs/
-dist/
-sdist/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
-
-# Installer logs
+syntax: glob
+# generic
+*.pyc
+*~
+.DS_Store
+ckanext_dcat.egg-info/*
+ckanext_cwbi_harvesters.egg-info/*
+sandbox/*
 pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
+cmd.txt
 .coverage
-.cache
-nosetests.xml
-coverage.xml
+.pytest_cache/
+htmlcov/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
 
-# Sphinx documentation
-docs/_build/
+# pylons
+data/*
+
+# other
+build/*
+dist/*
+tmp/*
+package/DEBIAN/control
+*.swp
+.idea

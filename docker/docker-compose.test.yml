@@ -1,0 +1,98 @@
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: ckan_test
+      POSTGRES_USER: ckan
+      POSTGRES_PASSWORD: ckan
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ckan -d ckan_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:6-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  solr:
+    platform: linux/amd64
+    image: ckan/ckan-solr:2.11-solr9
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8983/solr/"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  ckan-test:
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.test
+    environment:
+      CKAN_SQLALCHEMY_URL: postgresql://ckan:ckan@db/ckan_test
+      CKAN_REDIS_URL: redis://redis:6379/1
+      CKAN_SOLR_URL: http://solr:8983/solr/ckan
+      CKAN__PLUGINS: harvest cwbi_harvesters
+      EXTENSION_PATH: /srv/app/src_extensions/ckanext-esri-harvester
+      CKAN_INI: /srv/app/src_extensions/ckanext-esri-harvester/test.ini
+      TEST_PATH: ckanext/cwbi_harvesters/tests
+    volumes:
+      - ../:/srv/app/src_extensions/ckanext-esri-harvester
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      solr:
+        condition: service_healthy
+    command:
+      - sh
+      - -lc
+      - |
+        set -e
+        cd "$${EXTENSION_PATH}"
+        pip install --no-build-isolation -e .
+        pytest --ckan-ini="$${CKAN_INI}" "$${TEST_PATH}"
+
+  ckan-app:
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.test
+    environment:
+      CKAN_SQLALCHEMY_URL: postgresql://ckan:ckan@db/ckan_test
+      CKAN_REDIS_URL: redis://redis:6379/1
+      CKAN_SOLR_URL: http://solr:8983/solr/ckan
+      CKAN__PLUGINS: harvest cwbi_harvesters
+      CKAN_SYSADMIN_NAME: ckan_admin
+      CKAN_SYSADMIN_PASSWORD: test1234
+      CKAN_SYSADMIN_EMAIL: ckan_admin@example.com
+      EXTENSION_PATH: /srv/app/src_extensions/ckanext-esri-harvester
+      CKAN_INI: /srv/app/src_extensions/ckanext-esri-harvester/app.ini
+    volumes:
+      - ../:/srv/app/src_extensions/ckanext-esri-harvester
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      solr:
+        condition: service_healthy
+    command:
+      - sh
+      - -lc
+      - |
+        set -e
+        cd "$${EXTENSION_PATH}"
+        pip install --no-build-isolation -e .
+        cp "$${CKAN_INI}" /srv/app/ckan.ini
+        export CKAN_INI=/srv/app/ckan.ini
+        cd /srv/app
+        /srv/app/start_ckan.sh

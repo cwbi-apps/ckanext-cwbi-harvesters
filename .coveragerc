@@ -1,5 +1,12 @@
+[run]
+branch = True
+source =
+    ckanext/cwbi_harvesters
+
 [report]
 omit =
     */site-packages/*
     */python?.?/*
     ckan/*
+    ckanext-harvest/*
+    */tests/*

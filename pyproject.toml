@@ -1,48 +1,49 @@
 [project]
 name = "ckanext-cwbi-harvesters"
-version = "0.0.1"
-description = "Harvesters"
-readme = "README.md"
-requires-python = ">=3.8"
-
+version = "2.4.2"
+dynamic = ["dependencies", "optional-dependencies"]
+description = "Generic CKAN harvesters with ArcGIS support"
 authors = [
-    { name = "CWBI", email = "brian.p.mulcahy@erdc.dren.mil" }
+    {name = "Adrià Mercader", email = "amercadero@gmail.com"}
 ]
-
-license = { text = "AGPL-3.0-or-later" }
-
+maintainers = [
+    {name = "CKAN Tech Team and contributors", email = "tech-team@ckan.org"},
+    {name = "Seitenbau Govdata"},
+    {name = "Stefan Oderbolz"}
+]
+license = {text = "AGPL"}
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Intended Audience :: Developers",
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12"
 ]
-
-keywords = ["CKAN", "harvester", "cwbi", "usace", "schema"]
-
-dependencies = []
+keywords = [
+    "ckan",
+    "ckanext",
+    "harvest",
+    "arcgis",
+    "metadata",
+    "open data"
+]
 
 [project.urls]
-Homepage = "https://github.com/bmulcahy/ckanext-cwbi-harvesters"
-
-[project.entry-points."ckan.plugins"]
-cwbi_harvesters = "ckanext.cwbi_harvesters.plugin:CwbiHarvestersPlugin"
-cwbi_harvesters_csw_harvester = "ckanext.cwbi_harvesters.harvesters:CWBICSWHarvester"
-cwbi_harvesters_waf_harvester = "ckanext.cwbi_harvesters.harvesters:CWBIWAFHarvester"
-cwbi_harvesters_doc_harvester = "ckanext.cwbi_harvesters.harvesters:CWBIDocHarvester"
-cwbi_harvesters_geoportal_harvester = "ckanext.cwbi_harvesters.harvesters:CWBIGeoportalHarvester"
-waf_harvester_collection = "ckanext.cwbi_harvesters.harvesters:WAFCollectionHarvester"
-arcgis_harvester = "ckanext.cwbi_harvesters.harvesters:ArcGISHarvester"
+Documentation = "https://github.com/cwbi/ckanext-cwbi-harvesters"
+Repository = "https://github.com/cwbi/ckanext-cwbi-harvesters"
+Issues = "https://github.com/cwbi/ckanext-cwbi-harvesters/issues"
 
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=62.6.0"]
 build-backend = "setuptools.build_meta"
 
-[tool.pytest.ini_options]
-filterwarnings = [
-    "ignore::sqlalchemy.exc.SADeprecationWarning",
-    "ignore::sqlalchemy.exc.SAWarning",
-    "ignore::DeprecationWarning",
-]
-addopts = "--ckan-ini test.ini"
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+optional-dependencies = {dev = { file = ["dev-requirements.txt"] }}
+
+[project.entry-points."ckan.plugins"]
+cwbi_harvesters = "ckanext.cwbi_harvesters.plugin:CwbiHarvesters"
+

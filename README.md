@@ -1,123 +1,126 @@
-[![Tests](https://github.com/bmulcahy/ckanext-cwbi-harvesters/workflows/Tests/badge.svg?branch=main)](https://github.com/bmulcahy/ckanext-cwbi-harvesters/actions)
-
 # ckanext-cwbi-harvesters
 
-**TODO:** Put a description of your extension here:  What does it do? What features does it have? Consider including some screenshots or embedding a video!
+
+[![Tests](https://github.com/cwbi/ckanext-cwbi-harvesters/actions/workflows/test.yml/badge.svg)](https://github.com/cwbi/ckanext-cwbi-harvesters/actions)
 
 
-## Requirements
+Ckanext-cwbi-harvesters is a [CKAN](https://github.com/ckan/ckan) extension focused on reusable harvesting workflows.
 
-**TODO:** For example, you might want to mention here which versions of CKAN this
-extension works with.
+This fork is focused on harvesting only.
 
-If your extension works across different versions you can add the following table:
+This extension is currently supported in CKAN 2.10 and CKAN 2.11.
 
-Compatibility with core CKAN versions:
-
-| CKAN version    | Compatible?   |
-| --------------- | ------------- |
-| 2.6 and earlier | not tested    |
-| 2.7             | not tested    |
-| 2.8             | not tested    |
-| 2.9             | not tested    |
-
-Suggested values:
-
-* "yes"
-* "not tested" - I can't think of a reason why it wouldn't work
-* "not yet" - there is an intention to get it working
-* "no"
+> [!IMPORTANT]
+> Read the repository documentation for setup details:
+> https://github.com/cwbi/ckanext-cwbi-harvesters
 
 
-## Installation
+## Overview
 
-**TODO:** Add any additional install steps to the list below.
-   For example installing any non-Python dependencies or adding any required
-   config settings.
+In terms of CKAN features, this fork offers:
 
-To install ckanext-cwbi-harvesters:
-
-1. Activate your CKAN virtual environment, for example:
-
-     . /usr/lib/ckan/default/bin/activate
-
-2. Clone the source and install it on the virtualenv
-
-    git clone https://github.com/bmulcahy/ckanext-cwbi-harvesters.git
-    cd ckanext-cwbi-harvesters
-    pip install -e .
-	pip install -r requirements.txt
-
-3. Add `cwbi-harvesters` to the `ckan.plugins` setting in your CKAN
-   config file (by default the config file is located at
-   `/etc/ckan/default/ckan.ini`).
-
-4. Restart CKAN. For example if you've deployed CKAN with Apache on Ubuntu:
-
-     sudo service apache2 reload
+* A single base harvester plugin (`cwbi_harvesters`) that delegates to local harvester strategy classes in this package.
+* A built-in ArcGIS REST implementation (`cwbi_esri`) based on the ArcGIS harvesting logic.
 
 
-## Config settings
+These are implemented internally using:
 
-None at present
+* A base delegation model that routes the harvest lifecycle to local strategy classes.
+* An ArcGIS strategy that gathers, diffs and imports datasets from ArcGIS REST endpoints.
 
-**TODO:** Document any optional config settings here. For example:
+## Base Harvester
 
-	# The minimum number of hours to wait before re-checking a resource
-	# (optional, default: 24).
-	ckanext.cwbi_harvesters.some_setting = some_default_value
+Use `cwbi_harvesters` as the CKAN harvester plugin, then select an implementation in the harvest source config:
+
+```json
+{
+    "harvester": "cwbi_esri"
+}
+```
+
+Supported built-in values:
+
+* `cwbi_esri`
+
+To add a new harvester in this package:
+
+1. Add a new strategy class in `ckanext/cwbi_harvesters/harvesters/`.
+2. Register the alias in `LOCAL_HARVESTERS` in `ckanext/cwbi_harvesters/harvesters/registry.py` (for example `"cwbi_rest": "ckanext.cwbi_harvesters.harvesters.rest:RestHarvesterStrategy"`).
+3. Use that alias in the harvest source config.
+
+Example source config:
+
+```json
+{
+    "harvester": "cwbi_rest"
+}
+```
 
 
-## Developer installation
-
-To install ckanext-cwbi-harvesters for development, activate your CKAN virtualenv and
-do:
-
-    git clone https://github.com/cwbi-apps/ckanext-cwbi-harvesters.git
-    cd ckanext-cwbi-harvesters
-    pip install -e .
-    pip install -r dev-requirements.txt
 
 
-## Tests
+## Running the Tests
 
-To run the tests, do:
+To run tests locally:
 
-    pytest --ckan-ini=test.ini
+    pytest --ckan-ini=test.ini ckanext/cwbi_harvesters/tests
+
+Docker-based test run:
+
+    docker compose -f docker/docker-compose.test.yml build ckan-test
+    docker compose -f docker/docker-compose.test.yml run --rm ckan-test
+
+Normal CKAN UI run:
+
+    docker compose -f docker/docker-compose.test.yml up --build ckan-app
+
+Then open the normal CKAN app and log in with:
+
+    username: ckan_admin
+    password: test1234
+
+The `ckan-app` service now uses CKAN's standard startup script (`/srv/app/start_ckan.sh`), which runs `prerun.py` and creates the sysadmin from environment variables on startup.
+
+If the configured sysadmin already exists, CKAN startup does not overwrite that account.
+
+Useful URLs:
+
+    http://localhost:5000/user/login
+    http://localhost:5000/harvest
+    http://localhost:5000/harvest/new
+
+On the harvest source form, check that the harvester type includes the `cwbi_harvesters` plugin and use a source config like:
+
+    {"harvester": "cwbi_esri", "private_datasets": true}
+
+Run a subset by overriding `TEST_PATH`:
+
+    TEST_PATH=ckanext/cwbi_harvesters/tests docker compose -f docker/docker-compose.test.yml run --rm ckan-test
+
+The packaged runtime depends on [ckanext-harvest](https://github.com/ckan/ckanext-harvest). The Docker test image installs the required CKAN-side dependencies automatically.
+
+## Releases
+
+To create a new release, follow these steps:
+
+* Determine new release number based on the rules of [semantic versioning](http://semver.org)
+* Update the version number in `pyproject.toml`
+* Create a new release on GitHub with release notes describing the changes in that release
+
+## Acknowledgements
+
+Work on cwbi-harvesters has been made possible in part by:
+
+* the Government of Sweden and Vinnova, as part of work on [Öppnadata.se](http://oppnadata.se), the Swedish Open Data Portal.
+* [FIWARE](https://www.fiware.org), a project funded by the European Commission to integrate different technologies to offer connected cloud services from a single platform.
+
+If you can fund new developments or contribute please get in touch.
 
 
-## Releasing a new version of ckanext-cwbi-harvesters
+## Copying and License
 
-If ckanext-cwbi-harvesters should be available on PyPI you can follow these steps to publish a new version:
+This material is copyright (c) Open Knowledge.
 
-1. Update the version number in the `pyproject.toml` file. See [PEP 440](http://legacy.python.org/dev/peps/pep-0440/#public-version-identifiers) for how to choose version numbers.
+It is open and licensed under the GNU Affero General Public License (AGPL) v3.0 whose full text may be found at:
 
-2. Make sure you have the latest version of necessary packages:
-
-    pip install --upgrade setuptools wheel twine
-
-3. Create a source and binary distributions of the new version:
-
-       python -m build && twine check dist/*
-
-   Fix any errors you get.
-
-4. Upload the source distribution to PyPI:
-
-       twine upload dist/*
-
-5. Commit any outstanding changes:
-
-       git commit -a
-       git push
-
-6. Tag the new release of the project on GitHub with the version number from
-   the `setup.py` file. For example if the version number in `setup.py` is
-   0.0.1 then do:
-
-       git tag 0.0.1
-       git push --tags
-
-## License
-
-[AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)
+http://www.fsf.org/licensing/licenses/agpl-3.0.html

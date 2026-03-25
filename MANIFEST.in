@@ -1,6 +1,7 @@
-include README.rst
-include LICENSE
+recursive-include ckanext *.yaml
+recursive-include ckanext *.yml
+recursive-include ckanext *.html
+include README.md
+include pyproject.toml
 include requirements.txt
-recursive-include ckanext/cwbi_harvesters *.html *.json *.js *.less *.css *.mo *.yml
-recursive-include ckanext/cwbi_harvesters/migration *.ini *.py *.mako
-recursive-include ckanext/cwbi_harvesters/public *.*
+include dev-requirements.txt

@@ -1,0 +1,25 @@
+FROM --platform=linux/amd64 ckan/ckan-dev:2.11-py3.10
+
+USER root
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git postgresql-client curl && \
+    rm -rf /var/lib/apt/lists/*
+
+USER ckan
+WORKDIR /srv/app
+
+COPY requirements.txt /tmp/extension/requirements.txt
+COPY dev-requirements.txt /tmp/extension/dev-requirements.txt
+
+RUN pip install --no-cache-dir -r /tmp/extension/requirements.txt && \
+    pip install --no-cache-dir -r /tmp/extension/dev-requirements.txt && \
+    pip install --no-cache-dir git+https://github.com/ckan/ckanext-harvest.git && \
+    pip install --no-cache-dir pika
+
+ENV EXTENSION_PATH=/srv/app/src_extensions/ckanext-esri-harvester
+ENV CKAN_INI=/srv/app/src_extensions/ckanext-esri-harvester/test.ini
+ENV CKAN_APP_INI=/srv/app/src_extensions/ckanext-esri-harvester/app.ini
+ENV TEST_PATH=ckanext/cwbi_harvesters/tests
+
+CMD ["sh", "-c", "echo 'Image ready. Use docker compose -f docker/docker-compose.test.yml run --rm ckan-test for tests or docker compose -f docker/docker-compose.test.yml up --build ckan-app for the normal CKAN UI.'"]
