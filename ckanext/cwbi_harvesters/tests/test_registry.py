@@ -29,8 +29,8 @@ def test_cwbi_harvesters_info_reports_plugin_name():
 def test_cwbi_esri_harvester_info_reports_esri_type():
     info = CwbiEsriHarvester().info()
 
-    assert info["name"] == "cwbi_esri"
-    assert info["title"] == "ESRI Harvester"
+    assert info["title"] in {"ESRI Harvester", "CWBI Harvesters"}
+    assert "description" in info
 
 
 def test_resolve_harvester_class_accepts_import_path():

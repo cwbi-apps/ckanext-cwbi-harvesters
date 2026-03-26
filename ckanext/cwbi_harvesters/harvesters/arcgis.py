@@ -62,6 +62,15 @@ def strip_tags(html):
     return parser.get_data()
 
 
+def _upsert_extra(extras, key, value):
+    value = str(value)
+    for extra in extras:
+        if extra.get("key") == key:
+            extra["value"] = value
+            return
+    extras.append({"key": key, "value": value})
+
+
 class ArcGISHarvesterStrategy(HarvesterBase):
 
     """ArcGIS strategy used by CwbiHarvesters delegation."""
@@ -352,6 +361,14 @@ class ArcGISHarvesterStrategy(HarvesterBase):
             {"key": "metadata_type", "value": "geospatial"},
             {"key": "tags", "value": tags},
         ]
+
+        # ckanext-harvest expects harvested datasets to carry source linkage
+        # metadata so later log/error handling can resolve the harvest source.
+        _upsert_extra(extras, "harvest_source_id", harvest_object.source.id)
+        _upsert_extra(extras, "harvest_object_id", harvest_object.id)
+        _upsert_extra(extras, "harvest_source_title", harvest_object.source.title)
+        if getattr(harvest_object.source, "name", None):
+            _upsert_extra(extras, "harvest_source_name", harvest_object.source.name)
 
         extent = content.get("extent")
         if extent:
