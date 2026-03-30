@@ -24,6 +24,7 @@ def test_cwbi_harvesters_info_reports_plugin_name():
 
     assert info["name"] == "cwbi_harvesters"
     assert info["title"] == "CWBI Harvesters"
+    assert info["form_config_interface"] == "Text"
 
 
 def test_cwbi_esri_harvester_info_reports_esri_type():
@@ -31,6 +32,7 @@ def test_cwbi_esri_harvester_info_reports_esri_type():
 
     assert info["title"] in {"ESRI Harvester", "CWBI Harvesters"}
     assert "description" in info
+    assert info["form_config_interface"] == "Text"
 
 
 def test_resolve_harvester_class_accepts_import_path():

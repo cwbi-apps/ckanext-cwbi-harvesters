@@ -30,6 +30,7 @@ class CwbiHarvesters(HarvesterBase):
             "name": "cwbi_harvesters",
             "title": "CWBI Harvesters",
             "description": "Delegates to local harvester strategies in this package",
+            "form_config_interface": "Text",
         }
 
     def _delegate_for_source_config(self, source_config):
@@ -75,6 +76,7 @@ class CwbiEsriHarvester(CwbiHarvesters):
             "name": "cwbi_esri",
             "title": "ESRI Harvester",
             "description": "Harvest datasets from ArcGIS REST search endpoints",
+            "form_config_interface": "Text",
         }
 
     def _delegate_for_source_config(self, source_config):

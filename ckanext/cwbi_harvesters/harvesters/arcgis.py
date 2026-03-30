@@ -22,6 +22,8 @@ from ckanext.cwbi_harvesters.harvesters.utils import _safe_save
 
 log = logging.getLogger(__name__)
 
+REQUEST_TIMEOUT_SECONDS = 30
+
 TYPES = [
     "Web Map",
     "KML",
@@ -113,7 +115,15 @@ class ArcGISHarvesterStrategy(HarvesterBase):
 
     def gather_stage(self, harvest_job):
         source_url = harvest_job.source.url.rstrip("/") + "/"
-        source_config = json.loads(harvest_job.source.config or "{}")
+        try:
+            source_config = json.loads(harvest_job.source.config or "{}")
+        except ValueError as exc:
+            _safe_save(
+                self._save_gather_error,
+                "Invalid source config JSON: {0}".format(exc),
+                harvest_job,
+            )
+            return []
         extra_search_criteria = source_config.get("extra_search_criteria")
 
         num = 100
@@ -145,19 +155,29 @@ class ArcGISHarvesterStrategy(HarvesterBase):
                     "Unable to build url ({0}, {1}): {2}".format(source_url, search_path, exc),
                     harvest_job,
                 )
-                return None
+                return []
 
             try:
-                response = requests.get(url)
+                response = requests.get(url, timeout=REQUEST_TIMEOUT_SECONDS)
                 response.raise_for_status()
             except requests.exceptions.RequestException as exc:
                 _safe_save(self._save_gather_error,
                     "Unable to get content for URL: {0}: {1!r}".format(url, exc),
                     harvest_job,
                 )
-                return None
+                return []
 
-            results = response.json()
+            try:
+                results = response.json()
+            except ValueError as exc:
+                _safe_save(
+                    self._save_gather_error,
+                    "Unable to parse ArcGIS response JSON for URL: {0}: {1!r}".format(
+                        url, exc
+                    ),
+                    harvest_job,
+                )
+                return []
             for result in results.get("results", []):
                 if result.get("type") not in TYPES:
                     continue
@@ -241,6 +261,16 @@ class ArcGISHarvesterStrategy(HarvesterBase):
 
         source_config = json.loads(harvest_object.source.config or "{}")
         status = self._get_object_extra(harvest_object, "status")
+        valid_statuses = {"new", "changed", "delete"}
+
+        if status not in valid_statuses:
+            _safe_save(
+                self._save_object_error,
+                "Validation Error: unknown harvest object status '{0}'".format(status),
+                harvest_object,
+                "Import",
+            )
+            return False
 
         previous_object = (
             model.Session.query(HarvestObject)
@@ -264,6 +294,8 @@ class ArcGISHarvesterStrategy(HarvesterBase):
         }
 
         if status == "delete":
+            harvest_object.current = False
+            harvest_object.add()
             if harvest_object.package_id:
                 self._get_action("package_delete")(context, {"id": harvest_object.package_id})
                 log.info(
