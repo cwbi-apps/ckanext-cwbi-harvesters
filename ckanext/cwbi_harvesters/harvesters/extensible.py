@@ -1,6 +1,11 @@
 import logging
 
 try:
+    import ckan.plugins as plugins  # type: ignore[import-not-found]
+except ImportError:  # pragma: no cover
+    plugins = None
+
+try:
     from ckanext.harvest.harvesters import HarvesterBase  # type: ignore[import-not-found]
 except ImportError:  # pragma: no cover
     class HarvesterBase(object):
@@ -24,6 +29,36 @@ class CwbiHarvesters(HarvesterBase):
     Accepted values:
             - A local alias defined in ckanext.cwbi_harvesters.harvesters.registry
     """
+
+    if plugins is not None and hasattr(plugins, "IConfigDeclaration"):
+        plugins.implements(plugins.IConfigDeclaration, inherit=True)
+
+    def declare_config_options(self, declaration, key):
+        declaration.annotate("Local harvest compatibility settings")
+        declaration.declare(key.lang, "").set_description(
+            "Legacy language option read by CKAN during CLI startup."
+        )
+        declaration.declare(key.ckan.harvest.mq.type, "redis").set_description(
+            "Harvest queue backend."
+        )
+        declaration.declare(key.ckan.harvest.mq.hostname, "redis").set_description(
+            "Harvest queue host name."
+        )
+        declaration.declare(key.ckan.harvest.mq.port, "6379").set_description(
+            "Harvest queue port."
+        )
+        declaration.declare(key.ckan.harvest.mq.redis_db, "1").set_description(
+            "Harvest Redis database index."
+        )
+        declaration.declare(key.ckan.harvest.timeout, "3600").set_description(
+            "Harvest job timeout in seconds."
+        )
+        declaration.declare(key.ckan.harvest.status_mail.all, "false").set_description(
+            "Send harvest status email for all jobs."
+        )
+        declaration.declare(key.ckan.harvest.status_mail.errored, "false").set_description(
+            "Send harvest status email for errored jobs."
+        )
 
     def info(self):
         return {
@@ -66,6 +101,21 @@ class CwbiHarvesters(HarvesterBase):
     def import_stage(self, harvest_object):
         delegate = self._delegate_for_source_config(harvest_object.source.config)
         return self._call_delegate(delegate, "import_stage", harvest_object)
+
+
+class DcatUs3TransformHarvester(CwbiHarvesters):
+    """Concrete DCAT-US 3 transform harvester type shown in CKAN harvest source UI."""
+
+    def info(self):
+        return {
+            "name": "dcat_us_3_transform",
+            "title": "DCAT-US 3 Transform",
+            "description": "Harvest DCAT-US 3 service records as CKAN packages and endpoint resources",
+            "form_config_interface": "Text",
+        }
+
+    def _delegate_for_source_config(self, source_config):
+        return resolve_harvester_class("dcat_us_3_transform")()
 
 
 class CwbiEsriHarvester(CwbiHarvesters):

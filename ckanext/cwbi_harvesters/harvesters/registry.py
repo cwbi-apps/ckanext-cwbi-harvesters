@@ -8,6 +8,7 @@ DEFAULT_HARVESTER_ALIAS = "cwbi_esri"
 # "example": "ckanext.cwbi_harvesters.harvesters.example:ExampleHarvesterStrategy",
 LOCAL_HARVESTERS = {
     "cwbi_esri": "ckanext.cwbi_harvesters.harvesters.arcgis:ArcGISHarvesterStrategy",
+    "dcat_us_3_transform": "ckanext.cwbi_harvesters.harvesters.dcatus3:DcatUs3TransformHarvesterStrategy",
 }
 
 

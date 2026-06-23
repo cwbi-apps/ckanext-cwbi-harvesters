@@ -1,5 +1,6 @@
 from ckanext.cwbi_harvesters.harvesters.extensible import CwbiHarvesters
 from ckanext.cwbi_harvesters.harvesters.extensible import CwbiEsriHarvester
+from ckanext.cwbi_harvesters.harvesters.extensible import DcatUs3TransformHarvester
 import ckanext.cwbi_harvesters.harvesters.registry as registry_module
 from ckanext.cwbi_harvesters.harvesters.registry import available_harvesters
 from ckanext.cwbi_harvesters.harvesters.registry import describe_harvesters
@@ -7,8 +8,11 @@ from ckanext.cwbi_harvesters.harvesters.registry import get_harvester_alias
 from ckanext.cwbi_harvesters.harvesters.registry import resolve_harvester_class
 
 
-def test_available_harvesters_contains_cwbi_esri():
-    assert available_harvesters()["cwbi_esri"]
+def test_available_harvesters_contains_local_aliases():
+    harvesters = available_harvesters()
+
+    assert harvesters["cwbi_esri"]
+    assert harvesters["dcat_us_3_transform"]
 
 
 def test_get_harvester_alias_defaults_to_cwbi_esri():
@@ -35,6 +39,14 @@ def test_cwbi_esri_harvester_info_reports_esri_type():
     assert info["form_config_interface"] == "Text"
 
 
+def test_dcat_us_3_transform_harvester_info_reports_source_type():
+    info = DcatUs3TransformHarvester().info()
+
+    assert info["name"] == "dcat_us_3_transform"
+    assert info["title"] == "DCAT-US 3 Transform"
+    assert info["form_config_interface"] == "Text"
+
+
 def test_resolve_harvester_class_accepts_import_path():
     resolved_class = resolve_harvester_class(
         "ckanext.cwbi_harvesters.harvesters.example:ExampleHarvesterStrategy"
@@ -56,3 +68,46 @@ def test_describe_harvesters_reports_mapped_strategy(monkeypatch):
 
     assert "cwbi_rest" in by_alias
     assert by_alias["cwbi_rest"]["class_name"] == "ExampleHarvesterStrategy"
+
+
+class FakeConfigKey:
+    def __init__(self, parts=()):
+        self.parts = parts
+
+    def __getattr__(self, name):
+        return FakeConfigKey(self.parts + (name,))
+
+    def __str__(self):
+        return ".".join(self.parts)
+
+
+class FakeConfigDeclaration:
+    def __init__(self):
+        self.declared = {}
+        self.annotations = []
+
+    def annotate(self, text):
+        self.annotations.append(text)
+        return self
+
+    def declare(self, key, default):
+        self.declared[str(key)] = default
+        return self
+
+    def set_description(self, description):
+        return self
+
+
+def test_declares_local_harvest_config_options():
+    declaration = FakeConfigDeclaration()
+
+    CwbiHarvesters().declare_config_options(declaration, FakeConfigKey())
+
+    assert declaration.declared["lang"] == ""
+    assert declaration.declared["ckan.harvest.mq.type"] == "redis"
+    assert declaration.declared["ckan.harvest.mq.hostname"] == "redis"
+    assert declaration.declared["ckan.harvest.mq.port"] == "6379"
+    assert declaration.declared["ckan.harvest.mq.redis_db"] == "1"
+    assert declaration.declared["ckan.harvest.timeout"] == "3600"
+    assert declaration.declared["ckan.harvest.status_mail.all"] == "false"
+    assert declaration.declared["ckan.harvest.status_mail.errored"] == "false"

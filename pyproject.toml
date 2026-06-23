@@ -46,4 +46,5 @@ optional-dependencies = {dev = { file = ["dev-requirements.txt"] }}
 
 [project.entry-points."ckan.plugins"]
 cwbi_harvesters = "ckanext.cwbi_harvesters.plugin:CwbiHarvesters"
-
+cwbi_esri = "ckanext.cwbi_harvesters.plugin:CwbiEsriHarvester"
+dcat_us_3_transform = "ckanext.cwbi_harvesters.plugin:DcatUs3TransformHarvester"
