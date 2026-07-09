@@ -1,0 +1,21 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  ckan-startup-regression:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run CKAN startup regression test
+        run: docker compose -f docker/docker-compose.test.yml run --rm -e TEST_PATH=ckanext/cwbi_harvesters/tests/test_ckan_startup.py ckan-test

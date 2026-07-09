@@ -30,36 +30,6 @@ class CwbiHarvesters(HarvesterBase):
             - A local alias defined in ckanext.cwbi_harvesters.harvesters.registry
     """
 
-    if plugins is not None and hasattr(plugins, "IConfigDeclaration"):
-        plugins.implements(plugins.IConfigDeclaration, inherit=True)
-
-    def declare_config_options(self, declaration, key):
-        declaration.annotate("Local harvest compatibility settings")
-        declaration.declare(key.lang, "").set_description(
-            "Legacy language option read by CKAN during CLI startup."
-        )
-        declaration.declare(key.ckan.harvest.mq.type, "redis").set_description(
-            "Harvest queue backend."
-        )
-        declaration.declare(key.ckan.harvest.mq.hostname, "redis").set_description(
-            "Harvest queue host name."
-        )
-        declaration.declare(key.ckan.harvest.mq.port, "6379").set_description(
-            "Harvest queue port."
-        )
-        declaration.declare(key.ckan.harvest.mq.redis_db, "1").set_description(
-            "Harvest Redis database index."
-        )
-        declaration.declare(key.ckan.harvest.timeout, "3600").set_description(
-            "Harvest job timeout in seconds."
-        )
-        declaration.declare(key.ckan.harvest.status_mail.all, "false").set_description(
-            "Send harvest status email for all jobs."
-        )
-        declaration.declare(key.ckan.harvest.status_mail.errored, "false").set_description(
-            "Send harvest status email for errored jobs."
-        )
-
     def info(self):
         return {
             "name": "cwbi_harvesters",

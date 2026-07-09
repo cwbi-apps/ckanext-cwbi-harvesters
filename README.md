@@ -61,11 +61,11 @@ Example source config:
 
 ## Running the Tests
 
-To run tests locally:
+Run the CKAN startup regression test through the Docker test harness:
 
-    pytest --ckan-ini=test.ini ckanext/cwbi_harvesters/tests
+    docker compose -f docker/docker-compose.test.yml run --rm -e TEST_PATH=ckanext/cwbi_harvesters/tests/test_ckan_startup.py ckan-test
 
-Docker-based test run:
+To run the complete test suite locally through the same Docker test harness:
 
     docker compose -f docker/docker-compose.test.yml build ckan-test
     docker compose -f docker/docker-compose.test.yml run --rm ckan-test
