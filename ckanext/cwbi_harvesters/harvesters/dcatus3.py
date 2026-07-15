@@ -36,10 +36,10 @@ REQUEST_TIMEOUT_SECONDS = 60
 
 
 class DcatUs3TransformHarvesterStrategy(HarvesterBase):
-    """DCAT-US 3 DataService strategy used by the CWBI harvester plugin."""
+    """DCAT-US 3 service and dataset strategy used by the CWBI harvester plugin."""
 
     DISPLAY_NAME = "DCAT-US 3 Transform"
-    SUMMARY = "Harvest DCAT-US 3 service records as CKAN packages and endpoint resources."
+    SUMMARY = "Harvest DCAT-US 3 service and dataset records as CKAN packages and resources."
     CONFIG_SCHEMA = []
 
     def validate_config(self, source_config):
@@ -78,9 +78,13 @@ class DcatUs3TransformHarvesterStrategy(HarvesterBase):
                 harvest_objects.append(harvest_object.id)
 
             log.info(
-                "DCAT-US 3 transform gather created %s harvest objects from %s service records",
+                "DCAT-US 3 transform gather created %s harvest objects from %s service records and %s dataset records; %s endpoint resources, %s distribution resources, and %s datasets without usable distributions",
                 len(harvest_objects),
-                transformed["summary"]["source_service_record_count"],
+                transformed["summary"]["accepted_service_record_count"],
+                transformed["summary"]["accepted_dataset_record_count"],
+                transformed["summary"]["endpoint_resource_payload_count"],
+                transformed["summary"]["distribution_resource_payload_count"],
+                transformed["summary"]["datasets_without_usable_distribution_count"],
             )
             return harvest_objects
         except Exception as exc:

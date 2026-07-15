@@ -78,7 +78,7 @@ class FakeCkanActions:
         return payload
 
 
-def test_transform_catalog_imports_services_only():
+def test_transform_catalog_imports_service_and_metadata_only_dataset():
     result = transform_catalog({
         "dataset": [{
             "@type": "dcat:Dataset",
@@ -98,8 +98,12 @@ def test_transform_catalog_imports_services_only():
 
     assert result["summary"]["source_service_record_count"] == 1
     assert result["summary"]["accepted_service_record_count"] == 1
+    assert result["summary"]["source_dataset_record_count"] == 1
+    assert result["summary"]["accepted_dataset_record_count"] == 1
     assert result["summary"]["endpoint_resource_payload_count"] == 1
-    assert result["summary"]["visibility_counts"] == {"shared": 0, "private": 1}
+    assert result["summary"]["distribution_resource_payload_count"] == 0
+    assert result["summary"]["datasets_without_usable_distribution_count"] == 1
+    assert result["summary"]["visibility_counts"] == {"shared": 1, "private": 1}
     assert len(result["records_without_usable_url"]) == 0
     assert len(result["tag_sanitization_changes"]) == 1
 
@@ -314,3 +318,66 @@ def test_import_stage_marks_harvest_object_current_with_package_id():
     assert harvest_object.current is True
     assert harvest_object.package_id == "package-1"
     assert harvest_object.add_count == 1
+
+
+def test_transform_catalog_imports_dataset_distribution_as_resource():
+    result = transform_catalog({
+        "dataset": [{
+            "@type": "dcat:Dataset",
+            "identifier": "dataset-record",
+            "title": "Dataset Record",
+            "description": "Dataset description",
+            "distribution": [{
+                "title": "Download",
+                "format": "CSV",
+                "accessURL": "https://example.mil/dataset.csv",
+            }],
+        }],
+        "service": [{
+            "@type": "dcat:DataService",
+            "identifier": "service-record",
+            "title": "Service Record",
+            "endpointURL": ["https://example.mil/service"],
+        }],
+    }, "test-org")
+
+    assert result["summary"]["source_service_record_count"] == 1
+    assert result["summary"]["source_dataset_record_count"] == 1
+    assert result["summary"]["accepted_service_record_count"] == 1
+    assert result["summary"]["accepted_dataset_record_count"] == 1
+    assert result["summary"]["package_payload_count"] == 2
+    assert result["summary"]["endpoint_resource_payload_count"] == 1
+    assert result["summary"]["distribution_resource_payload_count"] == 1
+    assert len(result["datasets_without_usable_distribution"]) == 0
+
+    dataset_package = next(
+        package for package in result["packages"]
+        if package_identifier(package) == "dataset-record"
+    )
+    assert dataset_package["resources"] == [{
+        "name": "Download",
+        "url": "https://example.mil/dataset.csv",
+        "format": "CSV",
+        "description": "Dataset description",
+    }]
+
+
+def test_transform_catalog_keeps_dataset_without_distribution_as_package():
+    result = transform_catalog({
+        "dataset": [{
+            "@type": "dcat:Dataset",
+            "identifier": "metadata-only-dataset",
+            "title": "Metadata-only Dataset",
+        }],
+    }, "test-org")
+
+    assert result["summary"]["accepted_dataset_record_count"] == 1
+    assert result["summary"]["package_payload_count"] == 1
+    assert result["summary"]["distribution_resource_payload_count"] == 0
+    assert result["summary"]["datasets_without_usable_distribution_count"] == 1
+    assert result["packages"][0]["resources"] == []
+    assert result["datasets_without_usable_distribution"] == [{
+        "identifier": "metadata-only-dataset",
+        "title": "Metadata-only Dataset",
+        "dcatType": "dcat:Dataset",
+    }]
