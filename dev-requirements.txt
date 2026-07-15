@@ -1,4 +1,4 @@
-responses>=0.25.2
+responses>=0.26.2
 pyshacl
 mlcroissant==1.0.21; python_version >= '3.10'
 mock
