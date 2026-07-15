@@ -95,6 +95,7 @@ def build_extras(record):
     append_extra(extras, "issued", record.get("issued"))
     append_extra(extras, "modified", record.get("modified"))
     append_extra(extras, "accrualPeriodicity", record.get("accrualPeriodicity"))
+    append_extra(extras, "contactPoint", record.get("contactPoint"))
     append_extra(extras, "dcat_type", record.get("@type"))
     append_extra(extras, "theme", record.get("theme"))
     append_extra(extras, "theme_pref_labels", theme_labels)
@@ -204,18 +205,25 @@ def is_private_package(record):
 
 
 def contact_point(record):
-    contact = record.get("contactPoint")
-    if not isinstance(contact, dict):
-        return {}
+    for contact in to_array(record.get("contactPoint")):
+        if not isinstance(contact, dict):
+            continue
 
-    result = {}
-    maintainer = string_value(contact.get("fn"))
-    maintainer_email = re.sub(r"^mailto:", "", string_value(contact.get("hasEmail")), flags=re.IGNORECASE)
-    if maintainer:
-        result["maintainer"] = maintainer
-    if maintainer_email:
-        result["maintainer_email"] = maintainer_email
-    return result
+        result = {}
+        maintainer = string_value(contact.get("fn"))
+        maintainer_email = re.sub(
+            r"^mailto:",
+            "",
+            string_value(contact.get("hasEmail")),
+            flags=re.IGNORECASE,
+        )
+        if maintainer:
+            result["maintainer"] = maintainer
+        if maintainer_email:
+            result["maintainer_email"] = maintainer_email
+        if result:
+            return result
+    return {}
 
 
 def record_label(record, kind, index):
