@@ -443,3 +443,29 @@ def test_transform_catalog_preserves_array_contact_points():
     assert json.loads(extras["contactPoint"]) == contact_points
     assert package["maintainer"] == "Primary Contact"
     assert package["maintainer_email"] == "primary@example.mil"
+
+def test_transform_catalog_disambiguates_truncated_package_names():
+    identifiers = [
+        "urn:mex:data-service:2025data-catalog-ron-humphrey-logistics-business-intelligence-platform-module-metadata-h",
+        "urn:mex:data-service:2025data-catalog-ron-humphrey-logistics-business-intelligence-platform-module-metadata-i",
+    ]
+    catalog = {
+        "service": [
+            {
+                "@type": "dcat:DataService",
+                "identifier": identifier,
+                "title": identifier,
+            }
+            for identifier in identifiers
+        ],
+    }
+
+    first_result = transform_catalog(catalog, "test-org")
+    second_result = transform_catalog(catalog, "test-org")
+    first_names = [package["name"] for package in first_result["packages"]]
+    second_names = [package["name"] for package in second_result["packages"]]
+
+    assert len(first_names) == 2
+    assert len(set(first_names)) == 2
+    assert first_names == second_names
+    assert all(len(name) <= 100 for name in first_names)

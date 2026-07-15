@@ -1,3 +1,4 @@
+import hashlib
 import json
 import re
 from urllib.parse import urlparse
@@ -28,7 +29,11 @@ def sanitize_package_name(value):
     if len(name) < 2:
         name = "dcat-{}".format(name or "record")
 
-    name = re.sub(r"^[-_]+|[-_]+$", "", name[:CKAN_NAME_MAX_LENGTH])
+    if len(name) > CKAN_NAME_MAX_LENGTH:
+        suffix = "-{}".format(hashlib.sha256(raw.encode("utf-8")).hexdigest()[:8])
+        name = name[:CKAN_NAME_MAX_LENGTH - len(suffix)].rstrip("-_") + suffix
+
+    name = re.sub(r"^[-_]+|[-_]+$", "", name)
     return name if len(name) >= 2 else "dcat-record"
 
 
