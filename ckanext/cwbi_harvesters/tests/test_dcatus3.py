@@ -103,7 +103,7 @@ def test_transform_catalog_imports_service_and_metadata_only_dataset():
     assert result["summary"]["endpoint_resource_payload_count"] == 1
     assert result["summary"]["distribution_resource_payload_count"] == 0
     assert result["summary"]["datasets_without_usable_distribution_count"] == 1
-    assert result["summary"]["visibility_counts"] == {"shared": 1, "private": 1}
+    assert result["summary"]["visibility_counts"] == {"shared": 0, "private": 2}
     assert len(result["records_without_usable_url"]) == 0
     assert len(result["tag_sanitization_changes"]) == 1
 
@@ -381,3 +381,36 @@ def test_transform_catalog_keeps_dataset_without_distribution_as_package():
         "title": "Metadata-only Dataset",
         "dcatType": "dcat:Dataset",
     }]
+
+
+def test_access_rights_controls_visibility_and_is_preserved():
+    cases = [
+        (None, "Public", False),
+        (None, "USACE Internal, authentication required", True),
+        (None, "CAC Authentication, Keycloak Roles", True),
+        (None, None, True),
+        (None, "Unrecognized access policy", True),
+        ("public", "Internal", True),
+        ("public", "Public", False),
+        ("non-public", "Public", True),
+    ]
+
+    for index, (access_level, access_rights, expected_private) in enumerate(cases):
+        record = {
+            "@type": "dcat:DataService",
+            "identifier": "visibility-{}".format(index),
+            "title": "Visibility {}".format(index),
+        }
+        if access_level is not None:
+            record["accessLevel"] = access_level
+        if access_rights is not None:
+            record["accessRights"] = access_rights
+
+        package = transform_catalog({"service": [record]}, "test-org")["packages"][0]
+        extras = {extra["key"]: extra["value"] for extra in package["extras"]}
+
+        assert package["private"] is expected_private
+        if access_rights is None:
+            assert "accessRights" not in extras
+        else:
+            assert extras["accessRights"] == access_rights
