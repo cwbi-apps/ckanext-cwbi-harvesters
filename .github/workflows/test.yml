@@ -10,12 +10,12 @@ permissions:
   contents: read
 
 jobs:
-  ckan-startup-regression:
+  ckan-plugin-configuration:
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Run CKAN startup regression test
+      - name: Run CKAN plugin configuration test
         run: docker compose -f docker/docker-compose.test.yml run --rm -e TEST_PATH=ckanext/cwbi_harvesters/tests/test_ckan_startup.py ckan-test

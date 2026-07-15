@@ -1,4 +1,5 @@
 import copy
+import json
 import re
 
 import ckanext.cwbi_harvesters.harvesters.dcatus3 as dcatus3_module
@@ -414,3 +415,31 @@ def test_access_rights_controls_visibility_and_is_preserved():
             assert "accessRights" not in extras
         else:
             assert extras["accessRights"] == access_rights
+
+def test_transform_catalog_preserves_array_contact_points():
+    contact_points = [
+        "not-a-contact",
+        {
+            "@type": "vcard:Kind",
+            "fn": "Primary Contact",
+            "hasEmail": "mailto:primary@example.mil",
+        },
+        {
+            "@type": "vcard:Kind",
+            "fn": "Secondary Contact",
+            "hasEmail": "mailto:secondary@example.mil",
+        },
+    ]
+    package = transform_catalog({
+        "service": [{
+            "@type": "dcat:DataService",
+            "identifier": "array-contact-point",
+            "title": "Array Contact Point",
+            "contactPoint": contact_points,
+        }],
+    }, "test-org")["packages"][0]
+    extras = {extra["key"]: extra["value"] for extra in package["extras"]}
+
+    assert json.loads(extras["contactPoint"]) == contact_points
+    assert package["maintainer"] == "Primary Contact"
+    assert package["maintainer_email"] == "primary@example.mil"
