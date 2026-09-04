@@ -7,12 +7,13 @@ from ckan.config.declaration import Key
 
 @pytest.mark.ckan_config(
     "ckan.plugins",
-    "harvest cwbi_harvesters cwbi_esri dcat_us_3_transform",
+    "harvest cwbi_harvesters cwbi_esri cwbi_esri_rest dcat_us_3_transform",
 )
 @pytest.mark.usefixtures("with_plugins")
 def test_ckan_config_declarations_do_not_redeclare_existing_options():
     assert plugins.plugin_loaded("cwbi_harvesters")
     assert plugins.plugin_loaded("cwbi_esri")
+    assert plugins.plugin_loaded("cwbi_esri_rest")
     assert plugins.plugin_loaded("dcat_us_3_transform")
 
     declaration_plugins = list(
