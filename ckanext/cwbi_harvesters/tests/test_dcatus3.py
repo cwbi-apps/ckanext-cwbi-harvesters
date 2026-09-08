@@ -1,6 +1,7 @@
 import copy
 import json
 import re
+from unittest.mock import patch
 
 import ckanext.cwbi_harvesters.harvesters.dcatus3 as dcatus3_module
 from ckanext.cwbi_harvesters.harvesters.dcatus3 import DcatUs3TransformHarvesterStrategy
@@ -77,6 +78,109 @@ class FakeCkanActions:
         self.packages[payload["name"]] = payload
         self.updated.append(payload)
         return payload
+
+
+def test_gather_stage_returns_empty_list_when_catalog_request_fails_with_ssl_error():
+    class FakeSource:
+        id = "source-id"
+        url = "https://cwbi.sec.usace.army.mil/v1/public/dcat-modules"
+
+    class FakeHarvestJob:
+        source = FakeSource()
+
+        def __init__(self):
+            self.status = "Running"
+            self.gather_finished = None
+            self.finished = None
+            self.save_count = 0
+
+        def save(self):
+            self.save_count += 1
+
+    strategy = DcatUs3TransformHarvesterStrategy()
+    strategy._owner_org_for_source = lambda source: "test-org"
+    reindex_calls = []
+    strategy._action_runner = lambda action, data: reindex_calls.append((action, data))
+    job = FakeHarvestJob()
+    saved_errors = []
+
+    class FakeHarvestGatherError:
+        def __init__(self, message, job):
+            self.message = message
+            self.job = job
+
+        def save(self):
+            saved_errors.append(self)
+
+    ssl_error = dcatus3_module.requests.exceptions.SSLError(
+        "certificate verify failed: self-signed certificate in certificate chain"
+    )
+    with patch.object(
+        dcatus3_module,
+        "HarvestGatherError",
+        FakeHarvestGatherError,
+    ), patch(
+        "ckanext.cwbi_harvesters.harvesters.dcatus3.requests.get",
+        side_effect=ssl_error,
+    ) as get:
+        result = strategy.gather_stage(job)
+
+    assert result == []
+    get.assert_called_once_with(
+        FakeSource.url,
+        timeout=dcatus3_module.REQUEST_TIMEOUT_SECONDS,
+    )
+    assert len(saved_errors) == 1
+    assert saved_errors[0].job is job
+    assert FakeSource.url in saved_errors[0].message
+    assert "TLS certificate verification failed" in saved_errors[0].message
+    assert "authorized CA" in saved_errors[0].message
+    assert job.status == "Finished"
+    assert job.gather_finished is not None
+    assert job.finished is not None
+    assert job.save_count == 1
+    assert reindex_calls == [("harvest_source_reindex", {"id": FakeSource.id})]
+
+
+def test_gather_stage_uses_generic_message_for_non_catalog_failure():
+    class FakeSource:
+        id = "source-id"
+        url = "https://example.mil/catalog"
+
+    class FakeHarvestJob:
+        source = FakeSource()
+
+        def save(self):
+            pass
+
+    strategy = DcatUs3TransformHarvesterStrategy()
+    strategy._owner_org_for_source = lambda source: (_ for _ in ()).throw(
+        ValueError("source package is invalid")
+    )
+    strategy._reindex_source_after_failed_gather = lambda job: None
+    saved_errors = []
+
+    class FakeHarvestGatherError:
+        def __init__(self, message, job):
+            self.message = message
+            self.job = job
+
+        def save(self):
+            saved_errors.append(self)
+
+    with patch.object(
+        dcatus3_module,
+        "HarvestGatherError",
+        FakeHarvestGatherError,
+    ):
+        result = strategy.gather_stage(FakeHarvestJob())
+
+    assert result == []
+    assert len(saved_errors) == 1
+    assert saved_errors[0].message == (
+        "DCAT-US 3 gather failed for source https://example.mil/catalog: "
+        "source package is invalid"
+    )
 
 
 def test_transform_catalog_imports_service_and_metadata_only_dataset():

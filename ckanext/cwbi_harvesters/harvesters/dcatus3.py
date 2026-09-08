@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 
@@ -89,8 +90,12 @@ class DcatUs3TransformHarvesterStrategy(HarvesterBase):
             return harvest_objects
         except Exception as exc:
             log.exception("DCAT-US 3 transform gather failed")
-            self._save_gather_error_safe(str(exc), harvest_job)
-            return None
+            self._save_gather_error_safe(
+                self._gather_error_message(harvest_job, exc),
+                harvest_job,
+            )
+            self._finalize_failed_gather(harvest_job)
+            return []
 
     def fetch_stage(self, harvest_object):
         try:
@@ -174,6 +179,38 @@ class DcatUs3TransformHarvesterStrategy(HarvesterBase):
         response = requests.get(url, timeout=REQUEST_TIMEOUT_SECONDS)
         response.raise_for_status()
         return response.json()
+
+    def _gather_error_message(self, harvest_job, exc):
+        url = getattr(getattr(harvest_job, "source", None), "url", "")
+        if requests is not None and isinstance(exc, requests.exceptions.SSLError):
+            return (
+                "Unable to retrieve DCAT-US 3 catalog from {0}: TLS certificate "
+                "verification failed. Configure the CKAN worker to trust the "
+                "endpoint's authorized CA or correct the endpoint certificate "
+                "chain. Details: {1}"
+            ).format(url, exc)
+        return "DCAT-US 3 gather failed for source {0}: {1}".format(url, exc)
+
+    def _finalize_failed_gather(self, harvest_job):
+        finished = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        harvest_job.status = "Finished"
+        harvest_job.gather_finished = finished
+        harvest_job.finished = finished
+        harvest_job.save()
+        self._reindex_source_after_failed_gather(harvest_job)
+
+    def _reindex_source_after_failed_gather(self, harvest_job):
+        source_id = getattr(getattr(harvest_job, "source", None), "id", None)
+        if not source_id:
+            return
+
+        try:
+            self._action_runner("harvest_source_reindex", {"id": source_id})
+        except Exception:
+            log.exception(
+                "Unable to reindex harvest source %s after failed gather",
+                source_id,
+            )
 
     def _context(self):
         if model is None:
