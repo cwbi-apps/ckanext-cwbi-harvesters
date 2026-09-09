@@ -76,20 +76,66 @@ def append_extra(extras, key, value):
         extras.append({"key": key, "value": normalized})
 
 
+def comma_separated_value(value, strip_mailto=False):
+    values = value if isinstance(value, list) else [value]
+    parts = []
+    for item in values:
+        if isinstance(item, dict):
+            continue
+        for part in string_value(item).split(","):
+            normalized = part.strip()
+            if strip_mailto:
+                normalized = re.sub(r"^mailto:\s*", "", normalized, flags=re.IGNORECASE)
+            if normalized:
+                parts.append(normalized)
+    return ", ".join(parts)
+
+
+def normalized_contact(contact):
+    if not isinstance(contact, dict):
+        return {}
+
+    result = {}
+    name = comma_separated_value(contact.get("fn"))
+    email = comma_separated_value(contact.get("hasEmail"), strip_mailto=True)
+    if name:
+        result["name"] = name
+    if email:
+        result["email"] = email
+    return result
+
+
 def build_extras(record):
     extras = []
     publisher = record.get("publisher")
     if isinstance(publisher, dict):
         publisher = publisher.get("name")
 
-    theme_labels = []
+    theme_index = 0
     for theme in to_array(record.get("theme")):
-        if isinstance(theme, dict):
-            label = string_value(theme.get("prefLabel"))
-        else:
-            label = string_value(theme)
-        if label:
-            theme_labels.append(label)
+        label = theme.get("prefLabel") if isinstance(theme, dict) else theme
+        label = comma_separated_value(label)
+        if not label:
+            continue
+        theme_index += 1
+        append_extra(extras, "theme_{}_prefLabel".format(theme_index), label)
+
+    contact_index = 0
+    for contact in to_array(record.get("contactPoint")):
+        normalized = normalized_contact(contact)
+        if not normalized:
+            continue
+        contact_index += 1
+        append_extra(
+            extras,
+            "contact_point_{}_name".format(contact_index),
+            normalized.get("name"),
+        )
+        append_extra(
+            extras,
+            "contact_point_{}_email".format(contact_index),
+            normalized.get("email"),
+        )
 
     append_extra(extras, "identifier", record.get("identifier"))
     append_extra(extras, "publisher", publisher)
@@ -100,10 +146,7 @@ def build_extras(record):
     append_extra(extras, "issued", record.get("issued"))
     append_extra(extras, "modified", record.get("modified"))
     append_extra(extras, "accrualPeriodicity", record.get("accrualPeriodicity"))
-    append_extra(extras, "contactPoint", record.get("contactPoint"))
     append_extra(extras, "dcat_type", record.get("@type"))
-    append_extra(extras, "theme", record.get("theme"))
-    append_extra(extras, "theme_pref_labels", theme_labels)
     return extras
 
 
@@ -211,23 +254,16 @@ def is_private_package(record):
 
 def contact_point(record):
     for contact in to_array(record.get("contactPoint")):
-        if not isinstance(contact, dict):
-            continue
-
-        result = {}
-        maintainer = string_value(contact.get("fn"))
-        maintainer_email = re.sub(
-            r"^mailto:",
-            "",
-            string_value(contact.get("hasEmail")),
-            flags=re.IGNORECASE,
-        )
-        if maintainer:
-            result["maintainer"] = maintainer
-        if maintainer_email:
-            result["maintainer_email"] = maintainer_email
-        if result:
-            return result
+        normalized = normalized_contact(contact)
+        if normalized:
+            return {
+                key: normalized_value
+                for key, normalized_value in (
+                    ("maintainer", normalized.get("name")),
+                    ("maintainer_email", normalized.get("email")),
+                )
+                if normalized_value
+            }
     return {}
 
 

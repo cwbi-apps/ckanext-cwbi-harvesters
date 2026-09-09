@@ -1,0 +1,52 @@
+{
+  "multiple": {
+    "@type": "dcat:DataService",
+    "identifier": "array-contact-point",
+    "title": "Array Contact Point",
+    "theme": [
+      {
+        "@type": "skos:Concept",
+        "prefLabel": "Resilience"
+      },
+      "Mission Assurance",
+      {},
+      null
+    ],
+    "contactPoint": [
+      "not-a-contact",
+      {
+        "@context": {
+          "fn": "vcard:fn",
+          "hasEmail": "vcard:hasEmail"
+        },
+        "@type": "vcard:Kind",
+        "fn": "William Veatch, James Gade",
+        "hasEmail": "mailto:william.c.veatch@example.mil, mailto:james.t.gade@example.mil"
+      },
+      {
+        "@type": "vcard:Kind",
+        "fn": "Secondary Contact",
+        "hasEmail": "mailto:secondary@example.mil"
+      },
+      {}
+    ]
+  },
+  "singleton": {
+    "@type": "dcat:DataService",
+    "identifier": "singleton-contact-point",
+    "title": "Singleton Contact Point",
+    "theme": "Resilience",
+    "contactPoint": {
+      "@type": "vcard:Kind",
+      "fn": "Single Contact",
+      "hasEmail": "mailto:single@example.mil"
+    }
+  },
+  "empty": {
+    "@type": "dcat:DataService",
+    "identifier": "empty-nested-metadata",
+    "title": "Empty Nested Metadata",
+    "theme": [],
+    "contactPoint": [null, {}, ""]
+  }
+}

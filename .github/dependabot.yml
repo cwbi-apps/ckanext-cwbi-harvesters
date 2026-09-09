@@ -4,11 +4,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
-  - package-ecosystem: pip
-    directory: /docs
+  - package-ecosystem: docker
+    directory: /docker
     schedule:
       interval: weekly
-  - package-ecosystem: docker
+  - package-ecosystem: docker-compose
     directory: /docker
     schedule:
       interval: weekly
