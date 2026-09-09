@@ -6,6 +6,11 @@ except ImportError:  # pragma: no cover
     plugins = None
 
 try:
+    import ckan.plugins.toolkit as toolkit  # type: ignore[import-not-found]
+except ImportError:  # pragma: no cover
+    toolkit = None
+
+try:
     from ckanext.harvest.harvesters import HarvesterBase  # type: ignore[import-not-found]
 except ImportError:  # pragma: no cover
     class HarvesterBase(object):
@@ -16,6 +21,18 @@ from ckanext.cwbi_harvesters.harvesters.registry import resolve_harvester_class
 
 
 log = logging.getLogger(__name__)
+
+
+def _chained_action(function):
+    if toolkit is None:
+        return function
+    return toolkit.chained_action(function)
+
+
+def _side_effect_free(function):
+    if toolkit is None:
+        return function
+    return toolkit.side_effect_free(function)
 
 
 class CwbiHarvesters(HarvesterBase):
@@ -80,7 +97,9 @@ class DcatUs3TransformHarvester(CwbiHarvesters):
         return {
             "name": "dcat_us_3_transform",
             "title": "DCAT-US 3 Transform",
-            "description": "Harvest DCAT-US 3 service records as CKAN packages and endpoint resources",
+            "description": (
+                "Harvest DCAT-US 3 service records as CKAN packages and endpoint resources"
+            ),
             "form_config_interface": "Text",
         }
 
@@ -101,3 +120,87 @@ class CwbiEsriHarvester(CwbiHarvesters):
 
     def _delegate_for_source_config(self, source_config):
         return resolve_harvester_class("cwbi_esri")()
+
+
+class CwbiEsriRestHarvester(CwbiHarvesters):
+    """Concrete ArcGIS REST Services harvester type shown in CKAN."""
+
+    if plugins is not None:
+        plugins.implements(plugins.IActions)
+
+    def info(self):
+        return {
+            "name": "cwbi_esri_rest",
+            "title": "ArcGIS REST Services",
+            "description": "Harvest datasets from ArcGIS REST Services directories",
+            "form_config_interface": "Text",
+        }
+
+    def _delegate_for_source_config(self, source_config):
+        return resolve_harvester_class("cwbi_esri_rest")()
+
+    def get_actions(self):
+        """Add the ArcGIS report to the native harvest job responses."""
+        return {
+            "harvest_job_show": self.harvest_job_show,
+            "harvest_source_show_status": self.harvest_source_show_status,
+        }
+
+    @_chained_action
+    @_side_effect_free
+    def harvest_job_show(self, original_action, context, data_dict):
+        result = original_action(context, data_dict)
+        job = self._job_for_report(data_dict.get("id"))
+        return self._decorate_report(result, job)
+
+    @_chained_action
+    @_side_effect_free
+    def harvest_source_show_status(self, original_action, context, data_dict):
+        result = original_action(context, data_dict)
+        source = self._source_for_report(data_dict.get("id"))
+        last_job = result.get("last_job") if isinstance(result, dict) else None
+        if source is not None and last_job:
+            job = self._job_for_report(last_job.get("id"))
+            result["last_job"] = self._decorate_report(last_job, job)
+        return result
+
+    def _decorate_report(self, result, job):
+        if not self._is_rest_source(job.source if job is not None else None):
+            return result
+        from ckanext.cwbi_harvesters.harvesters.arcgis_rest import (
+            arcgis_rest_report,
+        )
+
+        decorated = dict(result)
+        decorated["arcgis_rest_report"] = arcgis_rest_report(result.get("stats"))
+        return decorated
+
+    @staticmethod
+    def _is_rest_source(source):
+        if source is None:
+            return False
+        if getattr(source, "type", None) == "cwbi_esri_rest":
+            return True
+        try:
+            import json
+
+            config = json.loads(getattr(source, "config", "") or "{}")
+        except (TypeError, ValueError):
+            return False
+        return (
+            isinstance(config, dict)
+            and (config.get("harvester") or config.get("harvester_type"))
+            == "cwbi_esri_rest"
+        )
+
+    @staticmethod
+    def _job_for_report(job_id):
+        from ckanext.harvest.model import HarvestJob
+
+        return HarvestJob.get(job_id)
+
+    @staticmethod
+    def _source_for_report(source_id):
+        from ckanext.harvest.model import HarvestSource
+
+        return HarvestSource.get(source_id)

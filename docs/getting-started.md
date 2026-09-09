@@ -8,7 +8,7 @@
 
 2. Enable the required CKAN plugins:
 
-        ckan.plugins = harvest cwbi_harvesters
+        ckan.plugins = harvest cwbi_harvesters cwbi_esri_rest
 
 3. Install `ckanext-harvest` if it is not already available in your CKAN environment:
 
@@ -17,6 +17,10 @@
 4. Create or update a harvest source and select the local strategy in the source config:
 
         {"harvester": "cwbi_esri"}
+
+For an ArcGIS REST Services directory:
+
+        {"harvester": "cwbi_esri_rest"}
 
 ## Running tests
 

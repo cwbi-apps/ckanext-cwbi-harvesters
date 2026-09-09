@@ -21,12 +21,14 @@ In terms of CKAN features, this fork offers:
 
 * A single base harvester plugin (`cwbi_harvesters`) that delegates to local harvester strategy classes in this package.
 * A built-in ArcGIS REST implementation (`cwbi_esri`) based on the ArcGIS harvesting logic.
+* A built-in ArcGIS REST Services directory implementation (`cwbi_esri_rest`).
 
 
 These are implemented internally using:
 
 * A base delegation model that routes the harvest lifecycle to local strategy classes.
 * An ArcGIS strategy that gathers, diffs and imports datasets from ArcGIS REST endpoints.
+* An ArcGIS REST Services strategy that traverses service directories and imports service endpoints.
 
 ## Base Harvester
 
@@ -41,6 +43,7 @@ Use `cwbi_harvesters` as the CKAN harvester plugin, then select an implementatio
 Supported built-in values:
 
 * `cwbi_esri`
+* `cwbi_esri_rest`
 
 To add a new harvester in this package:
 
@@ -92,6 +95,10 @@ Useful URLs:
 On the harvest source form, check that the harvester type includes the `cwbi_harvesters` plugin and use a source config like:
 
     {"harvester": "cwbi_esri", "private_datasets": true}
+
+For an ArcGIS REST Services directory, use the `cwbi_esri_rest` source type:
+
+    {"harvester": "cwbi_esri_rest"}
 
 Run a subset by overriding `TEST_PATH`:
 
