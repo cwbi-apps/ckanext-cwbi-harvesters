@@ -196,17 +196,8 @@ def build_resources(record, kind):
         return build_dataset_distribution_resources(record)
     return build_service_endpoint_resources(record)
 def is_private_package(record):
-    access_level = string_value(record.get("accessLevel"))
-    access_rights = string_value(record.get("accessRights"))
-
-    if access_level and access_rights:
-        return not (
-            access_level.lower() == "public"
-            and access_rights.lower() == "public"
-        )
-    if access_level:
-        return access_level.lower() != "public"
-    return access_rights.lower() != "public"
+    """Keep catalog metadata public regardless of data access restrictions."""
+    return False
 
 
 def contact_point(record):
