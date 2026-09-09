@@ -1,6 +1,7 @@
 import copy
 import json
 import re
+from pathlib import Path
 
 import ckanext.cwbi_harvesters.harvesters.dcatus3 as dcatus3_module
 from ckanext.cwbi_harvesters.harvesters.dcatus3 import DcatUs3TransformHarvesterStrategy
@@ -15,6 +16,11 @@ def package_identifier(package):
         if extra.get("key") == "identifier":
             return extra.get("value")
     return ""
+
+
+def load_nested_metadata_fixture():
+    fixture_path = Path(__file__).parent / "fixtures" / "dcatus3_nested_metadata.json"
+    return json.loads(fixture_path.read_text(encoding="utf-8"))
 
 
 class FakeCkanActions:
@@ -416,33 +422,54 @@ def test_access_rights_controls_visibility_and_is_preserved():
         else:
             assert extras["accessRights"] == access_rights
 
-def test_transform_catalog_preserves_array_contact_points():
-    contact_points = [
-        "not-a-contact",
-        {
-            "@type": "vcard:Kind",
-            "fn": "Primary Contact",
-            "hasEmail": "mailto:primary@example.mil",
-        },
-        {
-            "@type": "vcard:Kind",
-            "fn": "Secondary Contact",
-            "hasEmail": "mailto:secondary@example.mil",
-        },
-    ]
+def test_transform_catalog_normalizes_nested_theme_and_contact_point_values():
+    fixture = load_nested_metadata_fixture()["multiple"]
     package = transform_catalog({
-        "service": [{
-            "@type": "dcat:DataService",
-            "identifier": "array-contact-point",
-            "title": "Array Contact Point",
-            "contactPoint": contact_points,
-        }],
+        "service": [fixture],
     }, "test-org")["packages"][0]
     extras = {extra["key"]: extra["value"] for extra in package["extras"]}
 
-    assert json.loads(extras["contactPoint"]) == contact_points
-    assert package["maintainer"] == "Primary Contact"
-    assert package["maintainer_email"] == "primary@example.mil"
+    assert extras["theme_1_prefLabel"] == "Resilience"
+    assert extras["theme_2_prefLabel"] == "Mission Assurance"
+    assert "theme" not in extras
+    assert "theme_pref_labels" not in extras
+    assert extras["contact_point_1_name"] == "William Veatch, James Gade"
+    assert extras["contact_point_1_email"] == (
+        "william.c.veatch@example.mil, james.t.gade@example.mil"
+    )
+    assert extras["contact_point_2_name"] == "Secondary Contact"
+    assert extras["contact_point_2_email"] == "secondary@example.mil"
+    assert "contactPoint" not in extras
+    assert package["maintainer"] == "William Veatch, James Gade"
+    assert package["maintainer_email"] == (
+        "william.c.veatch@example.mil, james.t.gade@example.mil"
+    )
+
+
+def test_transform_catalog_normalizes_singleton_nested_values():
+    fixture = load_nested_metadata_fixture()["singleton"]
+    package = transform_catalog({"service": [fixture]}, "test-org")["packages"][0]
+    extras = {extra["key"]: extra["value"] for extra in package["extras"]}
+
+    assert extras["theme_1_prefLabel"] == "Resilience"
+    assert extras["contact_point_1_name"] == "Single Contact"
+    assert extras["contact_point_1_email"] == "single@example.mil"
+    assert package["maintainer"] == "Single Contact"
+    assert package["maintainer_email"] == "single@example.mil"
+
+
+def test_transform_catalog_omits_empty_nested_values():
+    fixture = load_nested_metadata_fixture()["empty"]
+    package = transform_catalog({"service": [fixture]}, "test-org")["packages"][0]
+    extra_keys = {extra["key"] for extra in package["extras"]}
+
+    assert not any(key.startswith("theme_") for key in extra_keys)
+    assert not any(key.startswith("contact_point_") for key in extra_keys)
+    assert "theme" not in extra_keys
+    assert "theme_pref_labels" not in extra_keys
+    assert "contactPoint" not in extra_keys
+    assert "maintainer" not in package
+    assert "maintainer_email" not in package
 
 def test_transform_catalog_disambiguates_truncated_package_names():
     identifiers = [
