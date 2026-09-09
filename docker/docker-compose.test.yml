@@ -21,7 +21,7 @@ services:
 
   solr:
     platform: linux/amd64
-    image: ckan/ckan-solr:2.11-solr9
+    image: ckan/ckan-solr:2.12-solr9
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8983/solr/"]
       interval: 10s
