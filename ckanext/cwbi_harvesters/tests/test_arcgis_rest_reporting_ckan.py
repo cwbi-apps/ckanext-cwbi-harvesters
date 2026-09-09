@@ -7,6 +7,7 @@ from ckan import model
 from ckan import plugins
 from ckan.tests import helpers
 from ckan.tests import factories
+from ckanext.harvest import model as harvest_model
 from ckanext.harvest.model import HarvestGatherError
 from ckanext.harvest.model import HarvestJob
 from ckanext.harvest.model import HarvestObject
@@ -14,10 +15,27 @@ from ckanext.harvest.model import HarvestObjectError
 from ckanext.harvest.model import HarvestSource
 
 
+@pytest.fixture
+def harvest_db_schema(clean_db):
+    """Restore harvest tables after CKAN's database cleanup fixture runs."""
+
+    harvest_tables = [
+        table
+        for name, table in harvest_model.BaseModel.metadata.tables.items()
+        if name.startswith("harvest_")
+    ]
+    harvest_model.BaseModel.metadata.create_all(
+        bind=model.meta.engine,
+        tables=harvest_tables,
+        checkfirst=True,
+    )
+    model.Session.remove()
+
+
 @pytest.mark.ckan_config(
     "ckan.plugins", "harvest cwbi_harvesters cwbi_esri_rest"
 )
-@pytest.mark.usefixtures("clean_db", "with_plugins")
+@pytest.mark.usefixtures("clean_db", "harvest_db_schema", "with_plugins")
 def test_arcgis_rest_report_is_exposed_by_ckan_harvest_actions():
     source = HarvestSource(
         url="https://example.com/arcgis/rest/services/",
@@ -63,7 +81,7 @@ def test_arcgis_rest_report_is_exposed_by_ckan_harvest_actions():
 @pytest.mark.ckan_config(
     "ckan.plugins", "harvest cwbi_harvesters cwbi_esri_rest"
 )
-@pytest.mark.usefixtures("clean_db", "with_plugins")
+@pytest.mark.usefixtures("clean_db", "harvest_db_schema", "with_plugins")
 def test_arcgis_report_actions_are_chained_and_side_effect_free():
     plugin = plugins.get_plugin("cwbi_esri_rest")
     actions = plugin.get_actions()
@@ -81,7 +99,7 @@ def test_arcgis_report_actions_are_chained_and_side_effect_free():
 @pytest.mark.ckan_config(
     "ckan.plugins", "harvest cwbi_harvesters cwbi_esri_rest"
 )
-@pytest.mark.usefixtures("clean_db", "with_plugins")
+@pytest.mark.usefixtures("clean_db", "harvest_db_schema", "with_plugins")
 def test_non_arcgis_job_uses_native_report_without_arcgis_projection():
     source = HarvestSource(
         url="https://example.com/feed",
@@ -104,19 +122,22 @@ def test_non_arcgis_job_uses_native_report_without_arcgis_projection():
 @pytest.mark.ckan_config(
     "ckan.plugins", "harvest cwbi_harvesters cwbi_esri_rest"
 )
-@pytest.mark.usefixtures("clean_db", "with_plugins")
+@pytest.mark.usefixtures("clean_db", "harvest_db_schema", "with_plugins")
 def test_arcgis_report_actions_are_available_over_get(app):
     sysadmin = factories.Sysadmin()
     context = {"ignore_auth": True, "user": sysadmin["name"]}
     source_package = helpers.call_action(
         "package_create",
         context,
+        id="arcgis-report-source-package",
         name="arcgis-report-source",
         title="ArcGIS report source",
         type="harvest",
+        source_type="cwbi_esri_rest",
+        url="https://example.com/arcgis/rest/services/",
     )
     source = HarvestSource(
-        id=source_package["id"],
+        id="arcgis-report-source-id",
         url="https://example.com/arcgis/rest/services/",
         type="cwbi_esri_rest",
         config="{}",

@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:13
+    image: postgres:18
     environment:
       POSTGRES_DB: ckan_test
       POSTGRES_USER: ckan
@@ -12,7 +12,7 @@ services:
       retries: 20
 
   redis:
-    image: redis:6-alpine
+    image: redis:8-alpine
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -21,7 +21,7 @@ services:
 
   solr:
     platform: linux/amd64
-    image: ckan/ckan-solr:2.11-solr9
+    image: ckan/ckan-solr:2.12-solr9
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8983/solr/"]
       interval: 10s
@@ -57,6 +57,8 @@ services:
         set -e
         cd "$${EXTENSION_PATH}"
         pip install --no-build-isolation -e .
+        ckan --config="$${CKAN_INI}" db init
+        ckan --config="$${CKAN_INI}" db upgrade -p harvest
         pytest --ckan-ini="$${CKAN_INI}" "$${TEST_PATH}"
 
   ckan-app:

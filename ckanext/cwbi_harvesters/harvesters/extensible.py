@@ -47,6 +47,12 @@ class CwbiHarvesters(HarvesterBase):
             - A local alias defined in ckanext.cwbi_harvesters.harvesters.registry
     """
 
+    def __new__(cls, *args, **kwargs):
+        """Give each concrete CKAN plugin class its own singleton instance."""
+        if "_instance" not in cls.__dict__:
+            cls._instance = object.__new__(cls)
+        return cls._instance
+
     def info(self):
         return {
             "name": "cwbi_harvesters",

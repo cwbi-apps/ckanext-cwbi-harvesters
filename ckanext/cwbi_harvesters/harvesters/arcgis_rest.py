@@ -474,9 +474,6 @@ class ArcGISRestHarvesterStrategy(HarvesterBase):
         }
 
     def _site_user_name(self):
-        get_user_name = getattr(self, "_get_user_name", None)
-        if callable(get_user_name):
-            return get_user_name()
         if toolkit is not None and model is not None:
             site_user = toolkit.get_action("get_site_user")(
                 {
@@ -488,6 +485,9 @@ class ArcGISRestHarvesterStrategy(HarvesterBase):
                 {},
             )
             return site_user["name"]
+        get_user_name = getattr(self, "_get_user_name", None)
+        if callable(get_user_name):
+            return get_user_name()
         raise RuntimeError("CKAN toolkit is unavailable")
 
     def _owner_org_for_source(self, source):
@@ -537,26 +537,26 @@ class ArcGISRestHarvesterStrategy(HarvesterBase):
             previous_object.add()
 
     def _save_gather_error_safe(self, message, harvest_job):
-        if HarvestGatherError is not None:
-            _safe_save(HarvestGatherError(message=message, job=harvest_job).save)
-            return
         method = getattr(self, "_save_gather_error", None)
         if callable(method):
             _safe_save(method, message, harvest_job)
-        else:
-            log.warning("ArcGIS REST gather: %s", message)
+            return
+        if HarvestGatherError is not None:
+            _safe_save(HarvestGatherError(message=message, job=harvest_job).save)
+            return
+        log.warning("ArcGIS REST gather: %s", message)
 
     def _save_object_error_safe(self, message, harvest_object, stage):
+        method = getattr(self, "_save_object_error", None)
+        if callable(method):
+            _safe_save(method, message, harvest_object, stage)
+            return
         if HarvestObjectError is not None:
             _safe_save(
                 HarvestObjectError(message=message, object=harvest_object, stage=stage).save
             )
             return
-        method = getattr(self, "_save_object_error", None)
-        if callable(method):
-            _safe_save(method, message, harvest_object, stage)
-        else:
-            log.warning("ArcGIS REST %s: %s", stage, message)
+        log.warning("ArcGIS REST %s: %s", stage, message)
 
     @staticmethod
     def _set_report_status(harvest_object, status):
