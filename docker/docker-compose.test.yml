@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:13
+    image: postgres:18
     environment:
       POSTGRES_DB: ckan_test
       POSTGRES_USER: ckan
