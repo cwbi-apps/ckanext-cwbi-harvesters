@@ -155,6 +155,7 @@ def test_fetch_stage_retrieves_service_json_and_optional_metadata():
 
 def test_make_package_dict_uses_endpoint_identity_and_service_title():
     harvester = ArcGISRestHarvesterStrategy()
+    harvester._package_by_name = Mock(return_value=None)
     harvest_source = SimpleNamespace(
         id="source-id",
         title="Source Title",
@@ -368,6 +369,7 @@ def test_import_stage_updates_existing_package_by_endpoint_without_duplicate():
     harvester = ArcGISRestHarvesterStrategy()
     actions = ActionRunner()
     harvester._action_runner = actions
+    harvester._retire_previous_current_objects = Mock()
 
     assert harvester.import_stage(first_object) is True
     assert harvester.import_stage(second_object) is True

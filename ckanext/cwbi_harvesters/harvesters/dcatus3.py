@@ -188,10 +188,6 @@ class DcatUs3TransformHarvesterStrategy(HarvesterBase):
         }
 
     def _site_user_name(self):
-        get_user_name = getattr(self, "_get_user_name", None)
-        if callable(get_user_name):
-            return get_user_name()
-
         if toolkit is not None and model is not None:
             site_user = toolkit.get_action("get_site_user")(
                 {
@@ -203,6 +199,10 @@ class DcatUs3TransformHarvesterStrategy(HarvesterBase):
                 {},
             )
             return site_user["name"]
+
+        get_user_name = getattr(self, "_get_user_name", None)
+        if callable(get_user_name):
+            return get_user_name()
 
         raise RuntimeError("CKAN toolkit is unavailable")
 
@@ -253,15 +253,23 @@ class DcatUs3TransformHarvesterStrategy(HarvesterBase):
         return "not found" in str(exc).lower()
 
     def _save_gather_error_safe(self, message, harvest_job):
+        method = getattr(self, "_save_gather_error", None)
+        if callable(method):
+            _safe_save(method, message, harvest_job)
+            return
         if HarvestGatherError is not None:
             _safe_save(HarvestGatherError(message=message, job=harvest_job).save)
             return
-        _safe_save(self._save_gather_error, message, harvest_job)
+        log.warning("DCAT-US 3 gather: %s", message)
 
     def _save_object_error_safe(self, message, harvest_object, stage):
+        method = getattr(self, "_save_object_error", None)
+        if callable(method):
+            _safe_save(method, message, harvest_object, stage)
+            return
         if HarvestObjectError is not None:
             _safe_save(
                 HarvestObjectError(message=message, object=harvest_object, stage=stage).save
             )
             return
-        _safe_save(self._save_object_error, message, harvest_object, stage)
+        log.warning("DCAT-US 3 %s: %s", stage, message)
